@@ -16,15 +16,36 @@
     <link href="css/site.css" rel="stylesheet" />
     <script type="text/javascript">
         var widgetId2;
+
+        var verifyCallback = function (response) {
+            if (response) {
+                var mySaveButton = document.getElementById("mySaveButton");
+                mySaveButton.style.display = "block";
+            }
+            console.log(response);
+        }
+
         window.loadCaptcha = function () {
-            var captchaElement = document.getElementById("myCaptcha");
-            if (captchaElement) {
-                widgetId2 = grecaptcha.render(captchaElement, {
-                    'sitekey': '6Le3E_QUAAAAAL2OocMziIFevT7cPfp_j-c5xLYr'
-                });
+            if (this.widgetId2 === undefined) {
                 debugger;
+                var captchaElement = document.getElementById("myCaptcha");
+                if (captchaElement) {
+                    widgetId2 = grecaptcha.render(captchaElement, {
+                        'sitekey': '6Le3E_QUAAAAAL2OocMziIFevT7cPfp_j-c5xLYr',
+                        'callback': verifyCallback
+                    });
+                }
             }
         }
+
+        window.resetCaptcha = function () {
+            grecaptcha.reset(this.widgetId2);
+        }
+
+        window.getCaptchaResult = function () {
+            return grecaptcha.getResponse(this.widgetId2);
+        }
+
         var onloadCallback = function () {
             //var captchaElement = document.getElementById("myCaptcha");
             //if (captchaElement) {

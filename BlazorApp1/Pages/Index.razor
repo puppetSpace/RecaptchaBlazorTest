@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject IJSRuntime _jsruntime
+@inject IHttpClientFactory _httpClientFactory;
 
 <h1>Hello, world!</h1>
 
@@ -7,12 +8,47 @@ Welcome to your new app.
 
 <form>
     <div id="myCaptcha"></div>
+    <input id="mySaveButton" type="button" class="btn btn-primary" value="Save" style="display:none" @onclick="SaveClicked" />
 </form>
+
+@if (RecaptchaVerified)
+{
+    <p>Recaptcha verified</p>
+}
+
 <SurveyPrompt Title="How is Blazor working for you?" />
 
-@code{ 
+@code{
+
+    protected bool RecaptchaVerified { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await _jsruntime.InvokeVoidAsync("loadCaptcha");
+    }
+
+    async Task SaveClicked()
+    {
+        var recaptchaResponse = await _jsruntime.InvokeAsync<string>("getCaptchaResult");
+        if (!string.IsNullOrWhiteSpace(recaptchaResponse))
+        {
+            var client = _httpClientFactory.CreateClient();
+
+            var httpresponse = await client.PostAsync(@$"https://www.google.com/recaptcha/api/siteverify?secret=6Le3E_QUAAAAAKWxNvYS_4fFn9EKLL2Izf_lZwUe&response={recaptchaResponse}",null);
+            if (httpresponse.IsSuccessStatusCode)
+            {
+                var content = await httpresponse.Content.ReadAsStringAsync();
+                var verifyresponse = System.Text.Json.JsonSerializer.Deserialize<VerifyResponse>(content);
+                RecaptchaVerified = verifyresponse.success;
+                //todo reset page so that a new captcha is loaded and button is hidden (only catcha is reloaded now)
+                await _jsruntime.InvokeVoidAsync("resetCaptcha");
+
+            }
+        }
+    }
+
+    private class VerifyResponse
+    {
+        public bool success { get; set; }
     }
 }
